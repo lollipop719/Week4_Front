@@ -8,6 +8,7 @@ export default function useWebSocket(url) {
     ws.onopen = () => console.log('Connected');
     ws.onmessage = (msg) => {
       const data = JSON.parse(msg.data);
+      console.log(data)
       if (data.type === "state_update") {
         setFlights(data.flights);
       }

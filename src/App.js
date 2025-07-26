@@ -26,7 +26,7 @@ const TEST_FLIGHTS = [
 ];
 
 function App() {
-  const [flights, setFlights] = useState(TEST_FLIGHTS);
+  const [flights, setFlights] = useState([]);
   const [ws, setWs] = useState(null);
   const [simTime, setSimTime] = useState(0);
   const [runwayStatus, setRunwayStatus] = useState({});
@@ -43,31 +43,30 @@ function App() {
 
   useEffect(() => {
     // WebSocket connection setup
-    // const websocket = new WebSocket('ws://localhost:8080'); // Adjust URL as needed
+    const websocket = new WebSocket('ws://localhost:8765');
+    websocket.onopen = () => { console.log('Connected to WebSocket'); };
+    websocket.onmessage = (event) => {
+      console.log('📨 Received message:', event.data);
+      const data = JSON.parse(event.data);
+      if (data.type === 'state_update') {
+        console.log('🛩️ State update received:', data);
+        const activeFlights = data.flights.filter(flight => flight.status !== 'dormant');
+        setFlights(activeFlights);
+        // Update simulation time from backend
+        if (data.time) {
+          const [hours, minutes] = data.time.split(':').map(Number);
+          const simTimeInSeconds = hours * 3600 + minutes * 60;
+          setSimTime(simTimeInSeconds);
+        }
+      }
+    };
+    websocket.onerror = (error) => { console.error('WebSocket error:', error); };
+    websocket.onclose = (event) => {
+      console.log('🔌 WebSocket closed:', event.code, event.reason);
+    };
     
-    // websocket.onopen = () => {
-    //   console.log('Connected to WebSocket');
-    // };
-
-    // websocket.onmessage = (event) => {
-    //   const data = JSON.parse(event.data);
-      
-    //   if (data.type === 'state_update') {
-    //     // Filter out dormant flights as requested
-    //     const activeFlights = data.flights.filter(flight => flight.status !== 'dormant');
-    //     setFlights(activeFlights);
-    //   }
-    // };
-
-    // websocket.onerror = (error) => {
-    //   console.error('WebSocket error:', error);
-    // };
-
-    // setWs(websocket);
-
-    // return () => {
-    //   websocket.close();
-    // };
+    setWs(websocket);
+    return () => { websocket.close(); };
   }, []);
 
   const generatePopupMessage = (eventData) => {
