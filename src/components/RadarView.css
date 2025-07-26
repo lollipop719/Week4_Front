@@ -1,0 +1,71 @@
+.radar-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+  }
+  
+  .map-background {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  
+  .planes-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  
+  .plane {
+    position: absolute;
+    font-size: 20px;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .plane:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  .plane img {
+    pointer-events: none;
+    user-select: none;
+  }
+
+.plane {
+  position: absolute;
+  z-index: 10;
+  transition: all 0.1s ease;
+}
+
+.plane.crashed {
+  animation: crash-pulse 1s ease-in-out infinite;
+  z-index: 15;
+}
+
+@keyframes crash-pulse {
+  0%, 100% {
+    filter: brightness(1.5) saturate(2) hue-rotate(0deg);
+  }
+  50% {
+    filter: brightness(2) saturate(3) hue-rotate(0deg);
+  }
+}
+
+.plane-img.crashed {
+  filter: drop-shadow(0 0 8px #ff2222) drop-shadow(0 0 16px #ff2222) brightness(1.5) saturate(2);
+  z-index: 20;
+}

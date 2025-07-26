@@ -1,0 +1,45 @@
+.trigger-event {
+    position: fixed;
+    top: 32px;
+    right: 32px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    padding: 24px 32px;
+    z-index: 10;
+    min-width: 320px;
+  }
+  
+  .trigger-event h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+  
+  .trigger-event form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .trigger-event select,
+  .trigger-event input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+  }
+  
+  .trigger-event button {
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: none;
+    background: #1976d2;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .trigger-event button:hover {
+    background: #125ea2;
+  }

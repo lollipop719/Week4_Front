@@ -1,0 +1,12 @@
+body, html, #root, .App {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .App {
+    min-height: 100vh;
+    min-width: 100vw;
+    position: relative;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }

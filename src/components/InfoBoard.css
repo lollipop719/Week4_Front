@@ -1,0 +1,64 @@
+.flight-board {
+  position: fixed;
+  top: 32px;
+  left: 32px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  padding: 24px 32px;
+  z-index: 10;
+  min-width: 420px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.flight-board h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.flight-board table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.flight-board th, .flight-board td {
+  padding: 8px 6px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.flight-board th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.flight-board tr:hover {
+  background: rgba(0,0,0,0.02);
+}
+
+/* Status colors */
+.status-delayed { color: #dc3545; }
+.status-boarding { color: #28a745; }
+.status-departed { color: #007bff; }
+.status-taxiToGate { color: #ffc107; }
+.status-taxiToRunway { color: #ffc107; }
+.status-landing { color: #17a2b8; }
+
+.sim-time {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(0, 150, 255, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid rgba(0, 150, 255, 0.6);
+}
+
+.sim-time h4 {
+  margin: 0;
+  color: rgba(0, 150, 255, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+}
