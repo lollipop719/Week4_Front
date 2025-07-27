@@ -135,6 +135,8 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
         status: flight.status,
         stateStartTime: simTime
       };
+      // For new flights, start at the first position immediately
+      return path[0];
     }
 
     const startInfo = stateStartTimes.current[flight_id];
@@ -143,6 +145,8 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
     if (startInfo.status !== flight.status) {
       startInfo.status = flight.status;
       startInfo.stateStartTime = simTime;
+      // For status changes, also start at the first position of the new path
+      return path[0];
     }
 
     const elapsed = simTime - startInfo.stateStartTime;

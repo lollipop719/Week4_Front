@@ -4,6 +4,7 @@ import InfoBoard from "./components/InfoBoard";
 import EventPanel from "./components/EventPanel";
 import RadarView from "./components/RadarView";
 import EventPopup from "./components/EventPopup";
+import WeatherDisplay from "./components/WeatherDisplay";
 
 const TEST_FLIGHTS = [
     // Add one for each path you want to test
@@ -34,6 +35,7 @@ function App() {
   const [speed, setSpeed] = useState(1); // Current speed (confirmed by backend)
   const [pendingSpeed, setPendingSpeed] = useState(1); // Pending speed change
   const [runwayStatus, setRunwayStatus] = useState({}); // Runway status state
+  const [weather, setWeather] = useState(null); // Weather state
 
   // Speed control intervals (in milliseconds)
   const speedIntervals = {
@@ -67,6 +69,11 @@ function App() {
           const [hours, minutes] = data.time.split(':').map(Number);
           const simTimeInSeconds = hours * 3600 + minutes * 60;
           setSimTime(simTimeInSeconds);
+        }
+        // Update weather from backend
+        if (data.weather) {
+          console.log('🌤️ Weather data received:', data.weather);
+          setWeather(data.weather);
         }
       } else if (data.type === 'speed_control_response') {
         console.log('🚀 Speed control response:', data);
@@ -251,6 +258,7 @@ function App() {
         onSpeedChange={handleSpeedChange} 
       />
       <EventPanel onSubmit={handleEventSubmit} />
+      <WeatherDisplay weather={weather} />
       <RadarView 
         flights={flights} 
         simTime={simTime} 

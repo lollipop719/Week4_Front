@@ -1,0 +1,189 @@
+.weather-display {
+  position: fixed;
+  top: 200px; /* Moved higher up from 280px */
+  right: 32px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  padding: 24px 32px;
+  z-index: 10;
+  min-width: 320px;
+  max-width: 350px;
+}
+
+.weather-display h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #333;
+}
+
+.weather-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.weather-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.weather-condition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.condition-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.wind-compass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.compass-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.compass-rose {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+}
+
+.compass-point {
+  position: absolute;
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+}
+
+.compass-point.n {
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-point.e {
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-point.s {
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-point.w {
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-needle {
+  position: absolute;
+  width: 3px;
+  height: 28px;
+  background: linear-gradient(to bottom, #e74c3c 0%, #e74c3c 50%, #3498db 50%, #3498db 100%);
+  transform-origin: center center;
+  transition: transform 0.3s ease;
+  border-radius: 1px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  top: 50%;
+  left: 50%;
+  margin-top: -14px;
+  margin-left: -1.5px;
+}
+
+.compass-needle::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 9px;
+  height: 9px;
+  background: #333;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.wind-speed {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.wind-direction-text {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.weather-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.detail-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #333;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .weather-display {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 16px;
+    max-width: none;
+  }
+  
+  .weather-main {
+    flex-direction: column;
+    gap: 20px;
+  }
+} 

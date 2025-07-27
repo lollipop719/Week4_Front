@@ -1,6 +1,5 @@
 export const PATHS = {
     "taxiToRunway_14L": [
-        { x: 120, y: 340, rot: 0 },
         { x: 987, y: 323, rot: 0 },
         { x: 978, y: 328, rot: 0 },
         { x: 971, y: 334, rot: 0 },
@@ -37,7 +36,6 @@ export const PATHS = {
         { x: 768, y: 295, rot: 0 },
     ],
     "taxiToRunway_14R": [
-        { x: 120, y: 340, rot: 0 },
         { x: 987, y: 323, rot: 0 },
         { x: 978, y: 328, rot: 0 },
         { x: 971, y: 334, rot: 0 },
@@ -167,8 +165,8 @@ export const PATHS = {
     ],
     "takeOff_14L": [
         { x: 762, y: 306, rot: 0 },
-        { x: 768, y: 314, rot: 0 },
-        { x: 774, y: 319, rot: 0 },
+        { x: 765, y: 314, rot: 0 },
+        { x: 771, y: 319, rot: 0 },
         { x: 779, y: 323, rot: 0 },
         { x: 788, y: 329, rot: 0 },
         { x: 793, y: 339, rot: 0 },
