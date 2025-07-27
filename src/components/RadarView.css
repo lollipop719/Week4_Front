@@ -17,7 +17,7 @@
     top: 0;
     left: 0;
   }
-  
+
   .planes-overlay {
     position: absolute;
     top: 0;
@@ -34,6 +34,8 @@
     pointer-events: auto;
     cursor: pointer;
     transition: all 0.3s ease;
+    /* Add smooth transition for position changes */
+    transition: left 0.3s ease, top 0.3s ease, transform 0.3s ease;
   }
   
   .plane:hover {

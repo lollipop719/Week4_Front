@@ -10,6 +10,20 @@ function getRotationDegrees(x1, y1, x2, y2) {
   return Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
 }
 
+// Helper to normalize angle to shortest path
+function normalizeAngle(angle) {
+  // Normalize to -180 to 180 degrees
+  while (angle > 180) angle -= 360;
+  while (angle < -180) angle += 360;
+  return angle;
+}
+
+// Helper to get shortest rotation path
+function getShortestRotation(fromAngle, toAngle) {
+  const diff = normalizeAngle(toAngle - fromAngle);
+  return fromAngle + diff;
+}
+
 // Compute rotation for all paths (mutates PATHS in-place)
 function computeAllRotations(paths) {
   Object.values(paths).forEach(path => {
@@ -42,6 +56,8 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
   // Track timeouts for each flight
   const dormantTimeouts = useRef({});
   const crashPositions = useRef({});
+  // Track previous rotations to ensure smooth transitions
+  const previousRotations = useRef({});
 
   // Update stateStartTimes when status changes
   useEffect(() => {
@@ -76,6 +92,8 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
               onRemoveFlight(flight.flight_id);
             }
             delete dormantTimeouts.current[flight.flight_id];
+            // Clean up rotation tracking
+            delete previousRotations.current[flight.flight_id];
           }, 1000); // 1 second delay
         }
       }
@@ -111,8 +129,21 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
     const path = PATHS[pathKey];
     if (!path) return { x: 0, y: 0, rot: 0 };
 
+    // Ensure start info exists
+    if (!stateStartTimes.current[flight_id]) {
+      stateStartTimes.current[flight_id] = {
+        status: flight.status,
+        stateStartTime: simTime
+      };
+    }
+
     const startInfo = stateStartTimes.current[flight_id];
-    if (!startInfo) return path[0];
+    
+    // If status changed, update start time
+    if (startInfo.status !== flight.status) {
+      startInfo.status = flight.status;
+      startInfo.stateStartTime = simTime;
+    }
 
     const elapsed = simTime - startInfo.stateStartTime;
     const duration = DURATION[status] || 1;
@@ -156,6 +187,15 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
           const pos = isCrashed && crashPositions.current[flight.flight_id]
             ? crashPositions.current[flight.flight_id]
             : getPlanePosition(flight, flights);
+          
+          // Calculate smooth rotation
+          const targetRotation = (pos.rot || 0) + 85;
+          const prevRotation = previousRotations.current[flight.flight_id] || targetRotation;
+          const smoothRotation = getShortestRotation(prevRotation, targetRotation);
+          
+          // Update previous rotation for next frame
+          previousRotations.current[flight.flight_id] = smoothRotation;
+          
           return (
             <div
               key={flight.flight_id}
@@ -163,7 +203,7 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
               style={{
                 left: `${pos.x}px`,
                 top: `${pos.y}px`,
-                transform: `translate(-50%, -50%) rotate(${(pos.rot || 0) + 85}deg)`,
+                transform: `translate(-50%, -50%) rotate(${smoothRotation}deg)`,
                 filter: isCrashed ? 'brightness(1.5) saturate(2) hue-rotate(0deg)' : 'none'
               }}
               title={`${flight.flight_id} - ${flight.status}${isCrashed ? ' - CRASHED!' : ''}`}
@@ -182,7 +222,7 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
                 style={{
                   fontSize: 12,
                   textAlign: "center",
-                  transform: `rotate(-${(pos.rot || 0) + 85}deg)`,
+                  transform: `rotate(-${smoothRotation}deg)`,
                   marginTop: 2,
                   color: isCrashed ? '#ff4444' : 'inherit',
                   fontWeight: isCrashed ? 'bold' : 'normal'
