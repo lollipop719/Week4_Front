@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from "react";
-import mapImage from "../assets/gimpo_map.png";
-import { PATHS } from "../data/paths";
+import React, { useState, useEffect, useRef } from "react";
 import "./RadarView.css";
+import mapImage from "../assets/gimpo_map.png";
 import planeImg from "../assets/plane.png";
+import { PATHS } from "../data/paths";
+import { getViewportSize } from "../utils/coordinateConverter";
 import RunwayHologram from "./RunwayHologram";
 
 // Helper to calculate rotation between two points
@@ -50,6 +51,10 @@ const DURATION = {
   taxiToGate: 600,  // 10 min
 };
 
+// Original map dimensions for coordinate conversion
+const ORIGINAL_MAP_WIDTH = 1536;
+const ORIGINAL_MAP_HEIGHT = 703;
+
 export default function RadarView({ flights, simTime, onRemoveFlight, runwayStatus, crashEvents }) {
   // Store state start times in a ref so they persist across renders
   const stateStartTimes = useRef({});
@@ -58,6 +63,18 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
   const crashPositions = useRef({});
   // Track previous rotations to ensure smooth transitions
   const previousRotations = useRef({});
+  const mapContainerRef = useRef(null);
+  const [viewportSize, setViewportSize] = useState(getViewportSize());
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportSize(getViewportSize());
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Update stateStartTimes when status changes
   useEffect(() => {
@@ -122,7 +139,7 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
     });
   }, [crashEvents, flights]);
 
-  // Helper to get position
+  // Helper to get position with on-the-fly coordinate conversion
   function getPlanePosition(flight, allFlights = []) {
     const { status, runway, flight_id } = flight;
     const pathKey = `${status}_${runway}`;
@@ -136,7 +153,7 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
         stateStartTime: simTime
       };
       // For new flights, start at the first position immediately
-      return path[0];
+      return convertToRelative(path[0]);
     }
 
     const startInfo = stateStartTimes.current[flight_id];
@@ -146,7 +163,7 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
       startInfo.status = flight.status;
       startInfo.stateStartTime = simTime;
       // For status changes, also start at the first position of the new path
-      return path[0];
+      return convertToRelative(path[0]);
     }
 
     const elapsed = simTime - startInfo.stateStartTime;
@@ -175,11 +192,36 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
     }
 
     const index = Math.floor(progress * (path.length - 1));
-    return path[index] || path[0];
+    const pixelPos = path[index] || path[0];
+    
+    // Convert to relative coordinates on-the-fly
+    return convertToRelative(pixelPos);
+  }
+
+  // Helper to convert pixel coordinates to relative coordinates
+  function convertToRelative(pixelPos) {
+    // Since background-size is 'auto', the image maintains its original size
+    // and gets centered in the viewport, so we need to account for the centering offset
+    const imageWidth = ORIGINAL_MAP_WIDTH;
+    const imageHeight = ORIGINAL_MAP_HEIGHT;
+    
+    // Calculate the offset to center the image in the viewport
+    const offsetX = (viewportSize.width - imageWidth) / 2;
+    const offsetY = (viewportSize.height - imageHeight) / 2;
+    
+    // Convert pixel coordinates to viewport coordinates
+    const viewportX = pixelPos.x + offsetX;
+    const viewportY = pixelPos.y + offsetY;
+    
+    return {
+      x: viewportX,
+      y: viewportY,
+      rot: pixelPos.rot || 0
+    };
   }
 
   return (
-    <div className="radar-view">
+    <div className="radar-view" ref={mapContainerRef}>
       <div
         className="map-background"
         style={{ backgroundImage: `url(${mapImage})` }}

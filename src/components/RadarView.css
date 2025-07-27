@@ -10,7 +10,7 @@
   .map-background {
     width: 100%;
     height: 100%;
-    background-size: cover;
+    background-size: auto;  /* Changed from 'cover' to 'auto' to maintain original size */
     background-position: center;
     background-repeat: no-repeat;
     position: absolute;
