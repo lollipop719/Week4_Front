@@ -2,7 +2,7 @@ import React from 'react';
 import './SpeedControl.css';
 
 const SpeedControl = ({ speed, onSpeedChange }) => {
-  const speeds = [1, 2, 4, 8];
+  const speeds = [1, 2, 4, 8, 64];
 
   return (
     <div className="speed-control">

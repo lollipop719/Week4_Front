@@ -42,7 +42,8 @@ function App() {
     1: 4000,  // 1x: 4 seconds per 10 sim minutes
     2: 2000,  // 2x: 2 seconds per 10 sim minutes
     4: 1000,  // 4x: 1 second per 10 sim minutes
-    8: 500    // 8x: 0.5 seconds per 10 sim minutes
+    8: 500,   // 8x: 0.5 seconds per 10 sim minutes
+    64: 62    // 64x: 0.062 seconds per 10 sim minutes (very fast!)
   };
 
   // Simulate time passing (4 seconds real time = 10 seconds sim time)
@@ -84,6 +85,9 @@ function App() {
           console.error('Speed control failed');
           setPendingSpeed(speed); // Reset pending speed to current speed
         }
+      } else if (data.type === 'event') {
+        console.log('🎯 Backend event received:', data);
+        handleBackendEvent(data.event);
       }
     };
     websocket.onerror = (error) => { console.error('WebSocket error:', error); };
@@ -121,6 +125,80 @@ function App() {
   };
 
   const handleEventSubmit = (eventData) => {
+    // Validate crash events before sending to backend
+    if (eventData.event_type === 'TAKEOFF_CRASH' || eventData.event_type === 'LANDING_CRASH') {
+      const targetFlight = flights.find(f => f.flight_id === eventData.target);
+      const expectedStatus = eventData.event_type === 'TAKEOFF_CRASH' ? 'takeOff' : 'landing';
+      
+      if (!targetFlight || targetFlight.status !== expectedStatus) {
+        // Show error message and don't send to backend
+        const errorMsg = eventData.event_type === 'TAKEOFF_CRASH' 
+          ? `The plane ${eventData.target} is not currently taking off!`
+          : `The plane ${eventData.target} is not currently landing!`;
+        setPopupMessage(errorMsg);
+        console.log('❌ Invalid crash event - not sent to backend:', eventData);
+        return; // Exit early, don't send to backend
+      }
+    }
+
+    // Validate flight-specific events to ensure target flight exists and is in correct status
+    if (eventData.event_type === 'FLIGHT_CANCEL' || eventData.event_type === 'FLIGHT_DELAY') {
+      const targetFlight = flights.find(f => f.flight_id === eventData.target);
+      
+      if (!targetFlight) {
+        // Show error message and don't send to backend
+        const errorMsg = `Flight ${eventData.target} does not exist!`;
+        setPopupMessage(errorMsg);
+        console.log('❌ Invalid flight event - target flight not found:', eventData);
+        return; // Exit early, don't send to backend
+      }
+      
+      // These events only work on dormant flights
+      if (targetFlight.status !== 'dormant') {
+        const errorMsg = `Flight ${eventData.target} is not dormant (current status: ${targetFlight.status}). ${eventData.event_type} can only be applied to dormant flights.`;
+        setPopupMessage(errorMsg);
+        console.log('❌ Invalid flight event - flight not dormant:', eventData);
+        return; // Exit early, don't send to backend
+      }
+    }
+
+    // GO_AROUND only works on waiting flights
+    if (eventData.event_type === 'GO_AROUND') {
+      const targetFlight = flights.find(f => f.flight_id === eventData.target);
+      
+      if (!targetFlight) {
+        // Show error message and don't send to backend
+        const errorMsg = `Flight ${eventData.target} does not exist!`;
+        setPopupMessage(errorMsg);
+        console.log('❌ Invalid flight event - target flight not found:', eventData);
+        return; // Exit early, don't send to backend
+      }
+      
+      // GO_AROUND only works on waiting flights
+      if (targetFlight.status !== 'waiting') {
+        const errorMsg = `Flight ${eventData.target} is not waiting (current status: ${targetFlight.status}). GO_AROUND can only be applied to waiting flights.`;
+        setPopupMessage(errorMsg);
+        console.log('❌ Invalid flight event - flight not waiting:', eventData);
+        return; // Exit early, don't send to backend
+      }
+    }
+
+    // EMERGENCY_LANDING creates new flights, so no validation needed
+    // (The backend will handle creating the new flight)
+
+    // Validate runway events to ensure target runway is valid
+    if (eventData.event_type === 'RUNWAY_CLOSURE') {
+      const validRunways = ['14L', '14R', '32L', '32R'];
+      if (!validRunways.includes(eventData.target)) {
+        // Show error message and don't send to backend
+        const errorMsg = `Invalid runway: ${eventData.target}. Valid runways are: ${validRunways.join(', ')}`;
+        setPopupMessage(errorMsg);
+        console.log('❌ Invalid runway event - invalid runway:', eventData);
+        return; // Exit early, don't send to backend
+      }
+    }
+
+    // If validation passes, send to backend
     const eventMessage = {
       type: "event",
       time: Date.now(),
@@ -129,94 +207,9 @@ function App() {
 
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(eventMessage));
-    }
-    console.log('Event sent:', eventMessage); // For testing
-
-    // Handle crash events
-    if (eventData.event_type === 'TAKEOFF_CRASH' || eventData.event_type === 'LANDING_CRASH') {
-      const targetFlight = flights.find(f => f.flight_id === eventData.target);
-      const expectedStatus = eventData.event_type === 'TAKEOFF_CRASH' ? 'takeOff' : 'landing';
-      
-      if (!targetFlight || targetFlight.status !== expectedStatus) {
-        // Show error message
-        const errorMsg = eventData.event_type === 'TAKEOFF_CRASH' 
-          ? `The plane ${eventData.target} is not currently taking off!`
-          : `The plane ${eventData.target} is not currently landing!`;
-        setPopupMessage(errorMsg);
-        return;
-      }
-      
-      // Apply crash effect
-      const duration = eventData.duration * 1000; // Convert to milliseconds
-      setCrashEvents(prev => ({
-        ...prev,
-        [eventData.target]: {
-          type: eventData.event_type,
-          startTime: Date.now(),
-          duration: duration
-        }
-      }));
-      
-      // Remove crash effect after duration
-      setTimeout(() => {
-        setCrashEvents(prev => {
-          const newEvents = { ...prev };
-          delete newEvents[eventData.target];
-          return newEvents;
-        });
-        // Show resolved popup
-        const resolvedMsg = `The crash has been resolved. The plane ${eventData.target} will resume ${eventData.event_type === 'TAKEOFF_CRASH' ? 'take off' : 'landing'}`;
-        setPopupMessage(resolvedMsg);
-      }, duration);
-    }
-
-    // Show popup message
-    const popupMsg = generatePopupMessage(eventData);
-    setPopupMessage(popupMsg);
-
-    // Handle runway events locally for testing
-    if (eventData.event_type === 'RUNWAY_CLOSURE') {
-      // Map input to both directions
-      const closureMap = {
-        '14L': ['14L', '32R'],
-        '32R': ['14L', '32R'],
-        '14R': ['14R', '32L'],
-        '32L': ['14R', '32L']
-      };
-      const runways = closureMap[eventData.target] || [eventData.target];
-      const duration = eventData.duration * 1000; // Convert to milliseconds
-      setRunwayStatus(prev => {
-        const updated = { ...prev };
-        runways.forEach(runway => {
-          updated[runway] = { ...updated[runway], isClosed: true };
-        });
-        return updated;
-      });
-      // Reset after duration
-      setTimeout(() => {
-        setRunwayStatus(prev => {
-          const updated = { ...prev };
-          runways.forEach(runway => {
-            updated[runway] = { ...updated[runway], isClosed: false };
-          });
-          return updated;
-        });
-      }, duration);
-    }
-    
-    else if (eventData.event_type === 'RUNWAY_INVERT') {
-      // Rotate 14L and 14R runways 180 degrees
-      setRunwayStatus(prev => {
-        const newStatus = { ...prev };
-        ['14L', '14R'].forEach(runway => {
-          if (newStatus[runway]) {
-            newStatus[runway] = { ...newStatus[runway], isInverted: !newStatus[runway].isInverted };
-          } else {
-            newStatus[runway] = { isInverted: true, isClosed: false };
-          }
-        });
-        return newStatus;
-      });
+      console.log('✅ Event sent to backend:', eventMessage);
+    } else {
+      console.error('❌ WebSocket not connected - event not sent');
     }
   };
 
@@ -246,6 +239,105 @@ function App() {
     } else {
       console.error('WebSocket not connected');
       setPendingSpeed(speed); // Reset if WebSocket not connected
+    }
+  };
+
+  const handleBackendEvent = (eventData) => {
+    console.log('🎯 Processing backend event:', eventData);
+    
+    // Generate and show popup message
+    const popupMsg = generatePopupMessage(eventData);
+    setPopupMessage(popupMsg);
+    
+    // Handle different event types with their specific animations/effects
+    switch (eventData.event_type) {
+      case 'TAKEOFF_CRASH':
+      case 'LANDING_CRASH':
+        // Apply crash effect
+        const duration = eventData.duration * 1000; // Convert to milliseconds
+        setCrashEvents(prev => ({
+          ...prev,
+          [eventData.target]: {
+            type: eventData.event_type,
+            startTime: Date.now(),
+            duration: duration
+          }
+        }));
+        
+        // Remove crash effect after duration
+        setTimeout(() => {
+          setCrashEvents(prev => {
+            const newEvents = { ...prev };
+            delete newEvents[eventData.target];
+            return newEvents;
+          });
+          // Show resolved popup
+          const resolvedMsg = `The crash has been resolved. The plane ${eventData.target} will resume ${eventData.event_type === 'TAKEOFF_CRASH' ? 'take off' : 'landing'}`;
+          setPopupMessage(resolvedMsg);
+        }, duration);
+        break;
+        
+      case 'RUNWAY_CLOSURE':
+        // Map input to both directions
+        const closureMap = {
+          '14L': ['14L', '32R'],
+          '32R': ['14L', '32R'],
+          '14R': ['14R', '32L'],
+          '32L': ['14R', '32L']
+        };
+        const runways = closureMap[eventData.target] || [eventData.target];
+        const runwayDuration = eventData.duration * 1000; // Convert to milliseconds
+        
+        setRunwayStatus(prev => {
+          const updated = { ...prev };
+          runways.forEach(runway => {
+            updated[runway] = { ...updated[runway], isClosed: true };
+          });
+          return updated;
+        });
+        
+        // Reset after duration
+        setTimeout(() => {
+          setRunwayStatus(prev => {
+            const updated = { ...prev };
+            runways.forEach(runway => {
+              updated[runway] = { ...updated[runway], isClosed: false };
+            });
+            return updated;
+          });
+        }, runwayDuration);
+        break;
+        
+      case 'RUNWAY_INVERT':
+        // Rotate 14L and 14R runways 180 degrees
+        setRunwayStatus(prev => {
+          const newStatus = { ...prev };
+          ['14L', '14R'].forEach(runway => {
+            if (newStatus[runway]) {
+              newStatus[runway] = { ...newStatus[runway], isInverted: !newStatus[runway].isInverted };
+            } else {
+              newStatus[runway] = { isInverted: true, isClosed: false };
+            }
+          });
+          return newStatus;
+        });
+        break;
+        
+      case 'EMERGENCY_LANDING':
+        // Emergency landing creates new flights, so no special handling needed here
+        // The backend will add the new flight to the state_update
+        break;
+        
+      case 'FLIGHT_CANCEL':
+      case 'FLIGHT_DELAY':
+      case 'GO_AROUND':
+        // These events are handled by the backend and reflected in state_update
+        // No special frontend animations needed
+        break;
+        
+      default:
+        console.log('⚠️ Unknown event type:', eventData.event_type);
+        break;
     }
   };
 
