@@ -29,17 +29,27 @@ function App() {
   const [flights, setFlights] = useState([]);
   const [ws, setWs] = useState(null);
   const [simTime, setSimTime] = useState(0);
-  const [runwayStatus, setRunwayStatus] = useState({});
-  const [popupMessage, setPopupMessage] = useState("");
+  const [popupMessage, setPopupMessage] = useState('');
   const [crashEvents, setCrashEvents] = useState({});
+  const [speed, setSpeed] = useState(1); // Current speed (confirmed by backend)
+  const [pendingSpeed, setPendingSpeed] = useState(1); // Pending speed change
+  const [runwayStatus, setRunwayStatus] = useState({}); // Runway status state
+
+  // Speed control intervals (in milliseconds)
+  const speedIntervals = {
+    1: 4000,  // 1x: 4 seconds per 10 sim minutes
+    2: 2000,  // 2x: 2 seconds per 10 sim minutes
+    4: 1000,  // 4x: 1 second per 10 sim minutes
+    8: 500    // 8x: 0.5 seconds per 10 sim minutes
+  };
 
   // Simulate time passing (4 seconds real time = 10 seconds sim time)
   useEffect(() => {
     const interval = setInterval(() => {
-      setSimTime((prev) => prev + 10);
-    }, 4000);
+      setSimTime(prevTime => prevTime + 10); // 10 minutes = 600 seconds
+    }, speedIntervals[speed]);
     return () => clearInterval(interval);
-  }, []);
+  }, [speed]);
 
   useEffect(() => {
     // WebSocket connection setup
@@ -57,6 +67,15 @@ function App() {
           const [hours, minutes] = data.time.split(':').map(Number);
           const simTimeInSeconds = hours * 3600 + minutes * 60;
           setSimTime(simTimeInSeconds);
+        }
+      } else if (data.type === 'speed_control_response') {
+        console.log('🚀 Speed control response:', data);
+        if (data.success) {
+          setSpeed(data.speed); // Apply the confirmed speed
+          setPendingSpeed(data.speed); // Update pending speed to match
+        } else {
+          console.error('Speed control failed');
+          setPendingSpeed(speed); // Reset pending speed to current speed
         }
       }
     };
@@ -207,9 +226,30 @@ function App() {
     setPopupMessage("");
   };
 
+  const handleSpeedChange = (newSpeed) => {
+    console.log(`🚀 Speed change requested: ${speed}x → ${newSpeed}x`);
+    setPendingSpeed(newSpeed); // Set pending speed immediately for UI feedback
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const speedMessage = {
+        type: "speed_control",
+        speed: newSpeed
+      };
+      ws.send(JSON.stringify(speedMessage));
+      console.log('Speed control sent:', speedMessage);
+    } else {
+      console.error('WebSocket not connected');
+      setPendingSpeed(speed); // Reset if WebSocket not connected
+    }
+  };
+
   return (
     <div className="App">
-      <InfoBoard flights={flights} simTime={simTime} />
+      <InfoBoard 
+        flights={flights} 
+        simTime={simTime} 
+        speed={pendingSpeed} 
+        onSpeedChange={handleSpeedChange} 
+      />
       <EventPanel onSubmit={handleEventSubmit} />
       <RadarView 
         flights={flights} 

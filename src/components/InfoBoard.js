@@ -1,7 +1,8 @@
 import React from "react";
 import "./InfoBoard.css";
+import SpeedControl from "./SpeedControl";
 
-export default function InfoBoard({ flights, simTime }) {
+export default function InfoBoard({ flights, simTime, speed, onSpeedChange }) {
   // Convert simTime (seconds) to HH:MM:SS format
   const formatSimTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -16,6 +17,9 @@ export default function InfoBoard({ flights, simTime }) {
       <h3>✈️ Arrivals & Departures</h3>
       <div className="sim-time">
         <h4>🕐 Simulation Time: {formatSimTime(simTime)}</h4>
+      </div>
+      <div className="speed-control-section">
+        <SpeedControl speed={speed} onSpeedChange={onSpeedChange} />
       </div>
       <table>
         <thead>
