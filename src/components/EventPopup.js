@@ -8,7 +8,7 @@ export default function EventPopup({ message, onClose }) {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [message, onClose]);
 
   return (
     <div className="event-popup">

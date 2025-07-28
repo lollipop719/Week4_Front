@@ -2,9 +2,17 @@ import React from 'react';
 import './WeatherAnimation.css';
 
 const WeatherAnimation = ({ weather }) => {
-  if (!weather || !weather.condition) {
+  console.log('🌤️ WeatherAnimation received weather:', weather);
+  
+  // Handle weather data that comes as an array
+  const weatherData = Array.isArray(weather) ? weather[0] : weather;
+  
+  if (!weatherData || !weatherData.condition) {
+    console.log('🌤️ No weather data or condition, returning null');
     return null;
   }
+
+  console.log('🌤️ Rendering weather effect for condition:', weatherData.condition);
 
   const getWeatherEffects = (condition) => {
     switch (condition) {
@@ -78,11 +86,12 @@ const WeatherAnimation = ({ weather }) => {
         );
       
       default:
+        console.log('🌤️ Unknown weather condition:', condition);
         return null;
     }
   };
 
-  return getWeatherEffects(weather.condition);
+  return getWeatherEffects(weatherData.condition);
 };
 
 export default WeatherAnimation; 

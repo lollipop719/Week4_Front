@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
 import InfoBoard from "./components/InfoBoard";
 import EventPanel from "./components/EventPanel";
 import RadarView from "./components/RadarView";
-import EventPopup from "./components/EventPopup";
 import WeatherDisplay from "./components/WeatherDisplay";
 import WeatherAnimation from "./components/WeatherAnimation";
+import EventPopup from "./components/EventPopup";
+import SpeedControl from "./components/SpeedControl";
 
 const TEST_FLIGHTS = [
     // Add one for each path you want to test
@@ -223,9 +224,9 @@ function App() {
     });
   };
 
-  const closePopup = () => {
+  const closePopup = useCallback(() => {
     setPopupMessage("");
-  };
+  }, []);
 
   const handleSpeedChange = (newSpeed) => {
     console.log(`🚀 Speed change requested: ${speed}x → ${newSpeed}x`);

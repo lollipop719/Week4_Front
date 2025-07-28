@@ -184,9 +184,11 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
         console.log(`Plane ${flight.flight_id} waiting check: occupied=${occupied}, progress=${progress}, waitingProgress=${waitingIdx / (path.length - 1)}`);
         if (occupied) {
           const waitingProgress = waitingIdx / (path.length - 1);
-          if (progress > waitingProgress) {
+          // Only reset to waiting point if we haven't passed it yet
+          if (progress <= waitingProgress) {
             progress = waitingProgress;
           }
+          // If we've already passed the waiting point, continue normally
         }
       }
     }
