@@ -5,6 +5,7 @@ import EventPanel from "./components/EventPanel";
 import RadarView from "./components/RadarView";
 import EventPopup from "./components/EventPopup";
 import WeatherDisplay from "./components/WeatherDisplay";
+import WeatherAnimation from "./components/WeatherAnimation";
 
 const TEST_FLIGHTS = [
     // Add one for each path you want to test
@@ -358,6 +359,7 @@ function App() {
         runwayStatus={runwayStatus}
         crashEvents={crashEvents}
       />
+      <WeatherAnimation weather={weather} />
       {popupMessage && (
         <EventPopup message={popupMessage} onClose={closePopup} />
       )}

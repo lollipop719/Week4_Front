@@ -1,0 +1,232 @@
+/* Weather Animation Overlay */
+.weather-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+/* Background tint effects for different weather conditions */
+.weather-overlay.rain {
+  background: linear-gradient(to bottom, rgba(100, 149, 237, 0.05), rgba(70, 130, 180, 0.03));
+}
+
+.weather-overlay.fog {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), rgba(240, 248, 255, 0.05));
+}
+
+.weather-overlay.storm {
+  background: linear-gradient(to bottom, rgba(47, 79, 79, 0.05), rgba(25, 25, 112, 0.03));
+}
+
+.weather-overlay.snow {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(240, 248, 255, 0.05));
+}
+
+/* Rain Effect */
+.rain-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.raindrop {
+  position: absolute;
+  width: 3px;
+  height: 25px;
+  background: linear-gradient(to bottom, transparent, rgba(174, 194, 224, 1));
+  border-radius: 0 0 3px 3px;
+  animation: rain-fall linear infinite;
+}
+
+.raindrop.heavy {
+  width: 4px;
+  height: 30px;
+  background: linear-gradient(to bottom, transparent, rgba(100, 149, 237, 1));
+}
+
+@keyframes rain-fall {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Fog Effect */
+.fog-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.single-fog {
+  position: absolute;
+  width: 200%;
+  height: 300%;
+  background-image: url('../assets/fog.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: fog-rotate linear infinite;
+  pointer-events: none;
+}
+
+.single-fog::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(255, 255, 255, 0.075) 100%);
+  pointer-events: none;
+}
+
+@keyframes fog-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Storm Effect */
+.storm {
+  background: linear-gradient(to bottom, rgba(47, 79, 79, 0.1), rgba(25, 25, 112, 0.05));
+}
+
+.lightning-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.lightning {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%);
+  animation: lightning-flash ease-in-out infinite;
+}
+
+@keyframes lightning-flash {
+  0%, 90%, 100% {
+    opacity: 0;
+  }
+  5%, 15% {
+    opacity: 1;
+  }
+}
+
+.storm-clouds {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.storm-cloud {
+  position: absolute;
+  width: 200px;
+  height: 100px;
+  background: radial-gradient(ellipse at center, rgba(105, 105, 105, 0.15) 0%, rgba(47, 79, 79, 0.1) 50%, transparent 100%);
+  border-radius: 50px;
+  animation: storm-cloud-drift linear infinite;
+}
+
+@keyframes storm-cloud-drift {
+  0% {
+    transform: translateX(-200px) translateY(-50px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(calc(100vw + 200px)) translateY(50px);
+    opacity: 0;
+  }
+}
+
+/* Snow Effect */
+.snow-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.snowflake {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.8);
+  animation: snow-fall linear infinite;
+  user-select: none;
+}
+
+@keyframes snow-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .raindrop {
+    width: 1px;
+    height: 15px;
+  }
+  
+  .raindrop.heavy {
+    width: 2px;
+    height: 20px;
+  }
+  
+  .snowflake {
+    font-size: 6px !important;
+  }
+  
+  .storm-cloud {
+    width: 150px;
+    height: 75px;
+  }
+}
+
+/* Performance optimizations */
+.weather-overlay {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.raindrop, .snowflake, .fog-layer, .lightning, .storm-cloud {
+  will-change: transform, opacity;
+} 
