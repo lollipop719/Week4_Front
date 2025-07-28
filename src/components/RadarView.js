@@ -63,6 +63,8 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
   const crashPositions = useRef({});
   // Track previous rotations to ensure smooth transitions
   const previousRotations = useRef({});
+  // Track transition states for smooth taxiToRunway -> taxiToGate transitions
+  const transitionStates = useRef({});
   const mapContainerRef = useRef(null);
   const [viewportSize, setViewportSize] = useState(getViewportSize());
 
@@ -76,18 +78,129 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all transition states when component unmounts
+      transitionStates.current = {};
+    };
+  }, []);
+
   // Update stateStartTimes when status changes
   useEffect(() => {
     flights.forEach(flight => {
       const prev = stateStartTimes.current[flight.flight_id];
       if (!prev || prev.status !== flight.status) {
-        stateStartTimes.current[flight.flight_id] = {
-          status: flight.status,
-          stateStartTime: simTime
-        };
+        // Check if this is a taxiToRunway -> taxiToGate transition
+        if (prev && prev.status === "taxiToRunway" && flight.status === "taxiToGate") {
+          // Handle smooth transition
+          handleTaxiTransition(flight, prev);
+        } else {
+          // Normal status change
+          stateStartTimes.current[flight.flight_id] = {
+            status: flight.status,
+            stateStartTime: simTime
+          };
+        }
       }
     });
   }, [flights, simTime]);
+
+  // Handle smooth transition from taxiToRunway to taxiToGate
+  const handleTaxiTransition = (flight, prevState) => {
+    const oldPathKey = `${prevState.status}_${flight.runway}`;
+    const newPathKey = `${flight.status}_${flight.runway}`;
+    
+    console.log(`🔄 Starting transition for ${flight.flight_id}: ${oldPathKey} -> ${newPathKey}`);
+    
+    // Get the old and new paths
+    const oldPath = PATHS[oldPathKey];
+    const newPath = PATHS[newPathKey];
+    
+    if (!oldPath || !newPath) {
+      console.warn(`⚠️ Paths not found for transition: ${oldPathKey} or ${newPathKey}`);
+      // Fallback to normal behavior if paths not found
+      stateStartTimes.current[flight.flight_id] = {
+        status: flight.status,
+        stateStartTime: simTime
+      };
+      return;
+    }
+
+    // Calculate current position in old path
+    const elapsed = simTime - prevState.stateStartTime;
+    const duration = DURATION[prevState.status] || 1;
+    let progress = Math.min(Math.max(elapsed / duration, 0), 1);
+    
+    // Apply waiting logic for old path
+    const waitingIdx = oldPath.findIndex(p => p.waiting);
+    if (waitingIdx !== -1) {
+      const occupied = flights.some(f =>
+        ["landing_14L", "landing_32R", "takeOff_14L", "takeOff_32R"].includes(`${f.status}_${f.runway}`) &&
+        f.flight_id !== flight.flight_id
+      );
+      if (occupied) {
+        const waitingProgress = waitingIdx / (oldPath.length - 1);
+        if (progress <= waitingProgress) {
+          progress = waitingProgress;
+        }
+      }
+    }
+
+    const currentIndex = Math.floor(progress * (oldPath.length - 1));
+    const currentPosition = oldPath[currentIndex] || oldPath[0];
+    
+    console.log(`📍 Current position in old path: (${currentPosition.x}, ${currentPosition.y}), progress: ${progress.toFixed(2)}`);
+    
+    // Find the nearest point in the new path
+    const nearestIndex = findNearestPoint(currentPosition, newPath);
+    const nearestPosition = newPath[nearestIndex];
+    
+    console.log(`🎯 Nearest point in new path: (${nearestPosition.x}, ${nearestPosition.y}), index: ${nearestIndex}`);
+    
+    // Calculate the progress in the new path based on the nearest point
+    const newProgress = nearestIndex / (newPath.length - 1);
+    
+    // Store transition state
+    transitionStates.current[flight.flight_id] = {
+      oldPathKey,
+      newPathKey,
+      currentPosition,
+      nearestIndex,
+      newProgress,
+      transitionStartTime: simTime
+    };
+    
+    // Update state start time with adjusted time to account for the progress
+    const adjustedStartTime = simTime - (newProgress * DURATION[flight.status]);
+    stateStartTimes.current[flight.flight_id] = {
+      status: flight.status,
+      stateStartTime: adjustedStartTime
+    };
+    
+    console.log(`✅ Transition setup complete for ${flight.flight_id}: progress ${progress.toFixed(2)} -> ${newProgress.toFixed(2)}`);
+  };
+
+  // Find the nearest point in a path to a given position
+  const findNearestPoint = (position, path) => {
+    let minDistance = Infinity;
+    let nearestIndex = 0;
+    
+    for (let i = 0; i < path.length; i++) {
+      const pathPoint = path[i];
+      const distance = Math.sqrt(
+        Math.pow(position.x - pathPoint.x, 2) + 
+        Math.pow(position.y - pathPoint.y, 2)
+      );
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIndex = i;
+      }
+    }
+    
+    return nearestIndex;
+  };
 
   // Handle setting to dormant after animation ends
   useEffect(() => {
@@ -111,6 +224,8 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
             delete dormantTimeouts.current[flight.flight_id];
             // Clean up rotation tracking
             delete previousRotations.current[flight.flight_id];
+            // Clean up transition state
+            delete transitionStates.current[flight.flight_id];
           }, 1000); // 1 second delay
         }
       }
@@ -120,6 +235,18 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
       Object.values(dormantTimeouts.current).forEach(clearTimeout);
     };
   }, [flights, simTime, onRemoveFlight]);
+
+  // Cleanup transition states when flights are removed
+  useEffect(() => {
+    const currentFlightIds = new Set(flights.map(f => f.flight_id));
+    
+    // Remove transition states for flights that no longer exist
+    Object.keys(transitionStates.current).forEach(flightId => {
+      if (!currentFlightIds.has(flightId)) {
+        delete transitionStates.current[flightId];
+      }
+    });
+  }, [flights]);
 
   // Store the position at the start of the crash
   useEffect(() => {
@@ -145,6 +272,13 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
     const pathKey = `${status}_${runway}`;
     const path = PATHS[pathKey];
     if (!path) return { x: 0, y: 0, rot: 0 };
+
+    // Check if this flight is in transition state
+    const transitionState = transitionStates.current[flight_id];
+    if (transitionState && transitionState.newPathKey === pathKey) {
+      // Use transition logic for smooth animation
+      return getTransitionPosition(flight, transitionState, path);
+    }
 
     // Ensure start info exists
     if (!stateStartTimes.current[flight_id]) {
@@ -199,6 +333,65 @@ export default function RadarView({ flights, simTime, onRemoveFlight, runwayStat
     // Convert to relative coordinates on-the-fly
     return convertToRelative(pixelPos);
   }
+
+  // Handle position calculation during transition
+  const getTransitionPosition = (flight, transitionState, path) => {
+    const { nearestIndex, newProgress, transitionStartTime } = transitionState;
+    
+    // Calculate time since transition started
+    const transitionElapsed = simTime - transitionStartTime;
+    const transitionDuration = 2; // 2 seconds for smooth transition
+    
+    if (transitionElapsed < transitionDuration) {
+      // During transition period, interpolate between old and new positions
+      const transitionProgress = transitionElapsed / transitionDuration;
+      
+      // Get the target position in the new path
+      const targetIndex = Math.floor(newProgress * (path.length - 1));
+      const targetPosition = path[targetIndex] || path[0];
+      
+      // Interpolate between current position and target position
+      const interpolatedX = transitionState.currentPosition.x + (targetPosition.x - transitionState.currentPosition.x) * transitionProgress;
+      const interpolatedY = transitionState.currentPosition.y + (targetPosition.y - transitionState.currentPosition.y) * transitionProgress;
+      
+      console.log(`🔄 Transitioning ${flight.flight_id}: ${transitionProgress.toFixed(2)} complete, position: (${interpolatedX.toFixed(0)}, ${interpolatedY.toFixed(0)})`);
+      
+      return convertToRelative({
+        x: interpolatedX,
+        y: interpolatedY,
+        rot: targetPosition.rot || 0
+      });
+    } else {
+      // Transition complete, use normal animation from the nearest point
+      const elapsed = simTime - stateStartTimes.current[flight.flight_id].stateStartTime;
+      const duration = DURATION[flight.status] || 1;
+      let progress = Math.min(Math.max(elapsed / duration, 0), 1);
+      
+      // Apply waiting logic
+      const waitingIdx = path.findIndex(p => p.waiting);
+      if (waitingIdx !== -1) {
+        const occupied = flights.some(f =>
+          ["landing_14L", "landing_32R", "takeOff_14L", "takeOff_32R"].includes(`${f.status}_${f.runway}`) &&
+          f.flight_id !== flight.flight_id
+        );
+        if (occupied) {
+          const waitingProgress = waitingIdx / (path.length - 1);
+          if (progress <= waitingProgress) {
+            progress = waitingProgress;
+          }
+        }
+      }
+      
+      const index = Math.floor(progress * (path.length - 1));
+      const pixelPos = path[index] || path[0];
+      
+      // Clear transition state after completion
+      delete transitionStates.current[flight.flight_id];
+      console.log(`✅ Transition complete for ${flight.flight_id}, continuing normal animation`);
+      
+      return convertToRelative(pixelPos);
+    }
+  };
 
   // Helper to convert pixel coordinates to relative coordinates
   function convertToRelative(pixelPos) {
