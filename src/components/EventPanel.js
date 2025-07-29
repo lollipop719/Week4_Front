@@ -41,7 +41,8 @@ export default function EventPanel({ onSubmit }) {
     setFormData({
       ...formData,
       eventType: selectedEventType,
-      targetType: newTargetType
+      targetType: newTargetType,
+      target: '' // Reset target when event type changes
     });
   };
 
@@ -51,6 +52,9 @@ export default function EventPanel({ onSubmit }) {
       [e.target.name]: e.target.value
     });
   };
+
+  // Check if we should show runway dropdown
+  const isRunwayEvent = formData.eventType === 'RUNWAY_CLOSURE' || formData.eventType === 'RUNWAY_INVERT';
 
   return (
     <div className="trigger-event">
@@ -82,13 +86,28 @@ export default function EventPanel({ onSubmit }) {
           <option value="Runway">Runway</option>
         </select>
         
-        <input 
-          name="target" 
-          placeholder="Target e.g., LJ517, 14L" 
-          value={formData.target}
-          onChange={handleChange}
-          required 
-        />
+        {isRunwayEvent ? (
+          <select 
+            name="target" 
+            value={formData.target}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select Runway</option>
+            <option value="14L">14L</option>
+            <option value="14R">14R</option>
+            <option value="32L">32L</option>
+            <option value="32R">32R</option>
+          </select>
+        ) : (
+          <input 
+            name="target" 
+            placeholder="Target e.g., LJ517" 
+            value={formData.target}
+            onChange={handleChange}
+            required 
+          />
+        )}
         
         <input 
           name="duration" 

@@ -45,8 +45,9 @@
 .status-boarding { color: #28a745; }
 .status-departed { color: #007bff; }
 .status-taxiToGate { color: #ffc107; }
-.status-taxiToRunway { color: #ffc107; }
+.status-taxiToRunway { color: #ff47b2; }
 .status-landing { color: #17a2b8; }
+.status-takeOff { color: #47fff6; }
 
 .sim-time {
   margin-bottom: 16px;

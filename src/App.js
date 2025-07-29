@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
+import HomePage from "./components/HomePage";
 import InfoBoard from "./components/InfoBoard";
 import EventPanel from "./components/EventPanel";
 import RadarView from "./components/RadarView";
@@ -38,6 +39,8 @@ function App() {
   const [pendingSpeed, setPendingSpeed] = useState(1); // Pending speed change
   const [runwayStatus, setRunwayStatus] = useState({}); // Runway status state
   const [weather, setWeather] = useState(null); // Weather state
+  const [simulationStarted, setSimulationStarted] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected'); // 'disconnected', 'connecting', 'connected'
 
   // Speed control intervals (in milliseconds)
   const speedIntervals = {
@@ -50,20 +53,47 @@ function App() {
 
   // Simulate time passing (4 seconds real time = 10 seconds sim time)
   useEffect(() => {
+    if (!simulationStarted) return;
+    
     const interval = setInterval(() => {
       setSimTime(prevTime => prevTime + 10); // 10 minutes = 600 seconds
     }, speedIntervals[speed]);
     return () => clearInterval(interval);
-  }, [speed]);
+  }, [speed, simulationStarted]);
 
-  useEffect(() => {
-    // WebSocket connection setup
+  const handleStartSimulation = (algorithm) => {
+    setConnectionStatus('connecting');
+    
+    // Create WebSocket connection
     const websocket = new WebSocket('ws://localhost:8765');
-    websocket.onopen = () => { console.log('Connected to WebSocket'); };
+    
+    websocket.onopen = () => { 
+      console.log('Connected to WebSocket');
+      setConnectionStatus('connected');
+      
+      // Send start simulation message
+      const startMessage = {
+        type: 'start_simulation',
+        algorithm: algorithm
+      };
+      websocket.send(JSON.stringify(startMessage));
+      console.log('Sent start simulation message:', startMessage);
+    };
+    
     websocket.onmessage = (event) => {
       console.log('📨 Received message:', event.data);
       const data = JSON.parse(event.data);
-      if (data.type === 'state_update') {
+      
+      if (data.type === 'start_simulation_response') {
+        console.log('🚀 Start simulation response:', data);
+        if (data.success) {
+          setSimulationStarted(true);
+          setWs(websocket);
+        } else {
+          setConnectionStatus('disconnected');
+          alert('Failed to start simulation');
+        }
+      } else if (data.type === 'state_update') {
         console.log('🛩️ State update received:', data);
         const activeFlights = data.flights.filter(flight => flight.status !== 'dormant');
         setFlights(activeFlights);
@@ -92,14 +122,27 @@ function App() {
         handleBackendEvent(data.event);
       }
     };
-    websocket.onerror = (error) => { console.error('WebSocket error:', error); };
-    websocket.onclose = (event) => {
-      console.log('🔌 WebSocket closed:', event.code, event.reason);
+    
+    websocket.onerror = (error) => { 
+      console.error('WebSocket error:', error);
+      setConnectionStatus('disconnected');
     };
     
-    setWs(websocket);
-    return () => { websocket.close(); };
+    websocket.onclose = (event) => {
+      console.log('🔌 WebSocket closed:', event.code, event.reason);
+      setConnectionStatus('disconnected');
+      setSimulationStarted(false);
+    };
+  };
+
+  const closePopup = useCallback(() => {
+    setPopupMessage("");
   }, []);
+
+  // Show home page if simulation hasn't started
+  if (!simulationStarted) {
+    return <HomePage onStartSimulation={handleStartSimulation} />;
+  }
 
   const generatePopupMessage = (eventData) => {
     const { event_type, target, duration } = eventData;
@@ -223,10 +266,6 @@ function App() {
       return newFlights;
     });
   };
-
-  const closePopup = useCallback(() => {
-    setPopupMessage("");
-  }, []);
 
   const handleSpeedChange = (newSpeed) => {
     console.log(`🚀 Speed change requested: ${speed}x → ${newSpeed}x`);
