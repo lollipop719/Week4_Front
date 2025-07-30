@@ -7,7 +7,8 @@ export default function HomePage({ onStartSimulation }) {
 
   const algorithms = [
     { value: "greedy", label: "Greedy Algorithm", description: "Simple and fast scheduling approach" },
-    { value: "advanced", label: "Advanced Algorithm", description: "Sophisticated optimization with MILP" }
+    { value: "advanced", label: "Advanced Algorithm", description: "Sophisticated optimization with MILP" },
+    { value: "rl", label: "Reinforcement Learning", description: "AI-powered scheduling using trained neural networks" }
   ];
 
   const handleStart = () => {
