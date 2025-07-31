@@ -192,11 +192,12 @@ function App() {
   const handleStartSimulation = (algorithm) => {
     setConnectionStatus('connecting');
     
-    // Create WebSocket connection
-    const websocket = new WebSocket('ws://localhost:8765');
+    // Create WebSocket connection to Railway backend
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'wss://week4server-production-d715.up.railway.app';
+    const websocket = new WebSocket(backendUrl);
     
     websocket.onopen = () => { 
-      console.log('Connected to WebSocket');
+      console.log('Connected to Railway WebSocket backend');
       setConnectionStatus('connected');
       
       // Send start simulation message
