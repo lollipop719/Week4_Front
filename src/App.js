@@ -193,7 +193,7 @@ function App() {
     setConnectionStatus('connecting');
     
     // Create WebSocket connection to Railway backend
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'wss://week4server-production-d715.up.railway.app';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'wss://week4server-production-d715.up.railway.app/ws';
     const websocket = new WebSocket(backendUrl);
     
     websocket.onopen = () => { 
