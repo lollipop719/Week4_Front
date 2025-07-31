@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/static/css/main.33d679c8.css",
+    "main.js": "/static/js/main.242f2d8d.js",
+    "static/media/gimpo_map.png": "/static/media/gimpo_map.08b4b83337676b0b393c.png",
+    "static/media/fog.png": "/static/media/fog.b63a37a8a1de6971545d.png",
+    "static/media/main_background.jpg": "/static/media/main_background.03e8e6c4b58aca16876c.jpg",
+    "static/media/plane.png": "/static/media/plane.51987c24143c624cc6e2.png",
+    "index.html": "/index.html",
+    "main.33d679c8.css.map": "/static/css/main.33d679c8.css.map",
+    "main.242f2d8d.js.map": "/static/js/main.242f2d8d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.33d679c8.css",
+    "static/js/main.242f2d8d.js"
+  ]
+}
