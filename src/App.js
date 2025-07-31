@@ -302,7 +302,7 @@ function App() {
             
             // Create a fresh WebSocket connection for the restart
             console.log('🔄 Creating fresh WebSocket connection for restart...');
-            const newWebSocket = new WebSocket('ws://localhost:8765/ws');
+            const newWebSocket = new WebSocket(backendUrl); // 방금 내가 수정함
             
             newWebSocket.onopen = () => {
               console.log('🔄 Fresh WebSocket connected for restart');
