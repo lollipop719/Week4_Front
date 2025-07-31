@@ -193,7 +193,7 @@ function App() {
     setConnectionStatus('connecting');
     
     // Create WebSocket connection to Railway backend
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'wss://week4server-production-d715.up.railway.app/ws';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'wss://week4server-production-d715.up.railway.app';
     const websocket = new WebSocket(backendUrl);
     
     websocket.onopen = () => { 
@@ -302,7 +302,7 @@ function App() {
             
             // Create a fresh WebSocket connection for the restart
             console.log('🔄 Creating fresh WebSocket connection for restart...');
-            const newWebSocket = new WebSocket('ws://localhost:8765/ws');
+            const newWebSocket = new WebSocket('ws://localhost:8765');
             
             newWebSocket.onopen = () => {
               console.log('🔄 Fresh WebSocket connected for restart');
